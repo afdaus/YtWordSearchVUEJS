@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find word in YouTube Video</title>
+    <style>
+        .mb-5 {
+            margin-bottom: 0.5rem;
+        }
+
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 25%;
+        }
+        .center2{
+            display: flex;
+            justify-content: center
+        }
+
+        input[type="text"] {
+             position: relative;
+             display: block;
+             margin : 0 auto;
+        }
+        
+        .bg {
+            color: green;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body style="background-color: #c2eddb; font-family:Georgia, 'Times New Roman', Times, serif;">
+    <h1>FIND A WORD IN YOUTUBE VIDEO!</h2>
+    <div id="app">
+        <img src="./vue.png" alt="VueJS Logo" class ="center">
+        <div class="mb-5">
+            <input class="url" type="text" v-model="url">
+        </div>
+
+        <div class="mb-5 center2">
+            <input class="keyword" type="text" v-model="keyword">
+        </div>
+
+        <div class="mb-5 center2">
+            <button class="clear" @click="clear">Clear Word</button>
+        </div>
+
+        <div class="mb-5 center2">
+            <button @click="clickOnFirst" :disabled="!pagination.first" class="first">
+                First
+            </button>
+            <button @click="clickOnPrev" :disabled="!pagination.prev" class="prev">
+                Prev
+            </button>
+            <button @click="clickOnNext" :disabled="!pagination.next" class="next">
+                Next
+            </button>
+            <button @click="clickOnLast" :disabled="!pagination.last" class="last">
+                Last
+            </button>
+        </div>
+
+        
+        <div class="total mb-5">
+            Total Result: {{ pagination.total }}
+        </div>
+         
+        <div class="halaman mb-5">
+            Page: {{ pagination.page}}
+        </div>
+
+        <ul class="list">
+            <li v-for="(result, index) in listresult"
+            :key="index"
+            >
+                <span v-html="result.text"></span>
+                <a :href="url + '&t=' + result.start + 's'" target="_blank">YouTube</a>
+            </li>
+        </ul>
+
+        <div class="mb-5">
+            <pre>{{ makePaginationString }}</pre>
+        </div>
+
+        <div class="mb-5">
+            <pre>{{ makeResultString }}</pre>
+        </div>
+        
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="./index.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                url: '           YouTube Link',
+                keyword: '         Word to Search',
+                listresult: [],
+                pagination: {
+                    first: null,
+                    last: null,
+                    prev: null,
+                    next: null,
+                    total: 0,
+                    page: null
+                }
+            },
+            computed:{
+                makePaginationString(){
+                    return JSON.stringify(this.pagination, null, 2)
+                },
+                makeResultString(){
+                    return JSON.stringify(this.listresult, null, 2)
+                }
+            },
+            watch: {
+                keyword : pDebounce(function keyword(keyword){
+                    this.search(keyword, this.url )
+                }, 250)
+            },
+            methods: {
+                async search(keyword, url, pagination){
+                    let urlApi = `https://cari-teks-video-api.vercel.app/api/search?q=${keyword}&url=${encodeURIComponent(url)}`
+                        if (pagination){
+                            urlApi = pagination
+                        }
+                        const respon = await fetch(urlApi).then(_respon => {
+                            if (_respon.ok){
+                                return _respon.json()
+                            }
+                        return[]
+                    })
+                    this.listresult = respon.data
+                    this.pagination.first = respon.first
+                    this.pagination.last = respon.last
+                    this.pagination.prev = respon.prev
+                    this.pagination.next = respon.next
+                    this.pagination.total = respon.total
+                    this.pagination.page = respon.page
+                },
+                clear() {
+                    this.keyword=''
+                },
+                clickOnFirst(){
+                    this.search(this.keyword, this.url, this.pagination.first)
+                },
+                clickOnPrev(){
+                    this.search(this.keyword, this.url, this.pagination.prev)
+                },
+                clickOnNext(){
+                    this.search(this.keyword, this.url, this.pagination.next)
+                },
+                clickOnLast(){
+                    this.search(this.keyword, this.url, this.pagination.last)
+                }
+            }
+        })
+    </script>
+</body>
+</html>
